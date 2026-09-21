@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>横浜モノポリー銀行</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&family=M+PLUS+1+Code:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --felt:#E4EDE0; --paper:#FFFFFF; --paper-2:#F6F9F4;
+    --ink:#182018; --ink-2:#4A564A; --ink-3:#7C8A7B;
+    --line:#CFDBCA; --line-2:#E3EBDF;
+    --brand:#B00D22; --brand-ink:#16281C;
+    --gain:#15803D; --loss:#C2410C;
+    --chip:#EDF3EA;
+    --shadow:0 1px 2px rgba(24,32,24,.06), 0 6px 18px rgba(24,32,24,.05);
+    --r:12px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --felt:#111711; --paper:#1A221A; --paper-2:#222C21;
+      --ink:#E8EFE6; --ink-2:#AEBCAC; --ink-3:#7F8E7E;
+      --line:#2E3B2D; --line-2:#263125;
+      --brand:#FF6B7A; --brand-ink:#E8EFE6;
+      --gain:#4ADE80; --loss:#FB923C;
+      --chip:#232E22;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --felt:#111711; --paper:#1A221A; --paper-2:#222C21;
+    --ink:#E8EFE6; --ink-2:#AEBCAC; --ink-3:#7F8E7E;
+    --line:#2E3B2D; --line-2:#263125;
+    --brand:#FF6B7A; --brand-ink:#E8EFE6;
+    --gain:#4ADE80; --loss:#FB923C;
+    --chip:#232E22;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--felt); color:var(--ink);
+    font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans",system-ui,sans-serif;
+    font-size:15px; line-height:1.55; -webkit-text-size-adjust:100%;
+  }
+  .num{font-family:"M PLUS 1 Code",ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums}
+  .wrap{max-width:1040px; margin:0 auto; padding-inline:16px; padding-block:0 48px}
+
+  header{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--felt); border-bottom:1px solid var(--line)}
+  .bar{max-width:1040px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .mark{display:flex; align-items:baseline; gap:8px; margin-right:auto}
+  .mark b{font-size:19px; font-weight:800}
+  .mark span{font-size:11px; color:var(--ink-3); letter-spacing:.14em}
+  .mark .dot{color:var(--brand)}
+  .stat{text-align:right}
+  .stat label{display:block; font-size:10px; letter-spacing:.1em; color:var(--ink-3)}
+  .stat b{font-size:17px; font-weight:700}
+
+  h2{font-size:13px; letter-spacing:.14em; color:var(--ink-3); font-weight:700; margin:28px 0 10px}
+  .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+
+  button{font:inherit; cursor:pointer; border-radius:9px; border:1px solid var(--line); background:var(--paper); color:var(--ink); padding:7px 12px; transition:background .12s, border-color .12s}
+  button:hover{background:var(--paper-2)}
+  button:focus-visible, select:focus-visible, input:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  .primary{background:var(--brand-ink); color:var(--paper); border-color:var(--brand-ink); font-weight:700; padding:11px 22px}
+  .primary:hover{background:var(--brand-ink); filter:brightness(1.25)}
+  .ghost{background:transparent; border-color:transparent; color:var(--ink-2); padding:5px 8px; font-size:13px}
+  .ghost:hover{background:var(--chip)}
+  .chip{background:var(--chip); border-color:transparent; padding:5px 11px; font-size:13px; border-radius:999px}
+  .chip:hover{background:var(--line-2)}
+
+  input,select{font:inherit; color:var(--ink); background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:9px 11px; width:100%}
+  label.f{display:block; font-size:11px; letter-spacing:.08em; color:var(--ink-3); margin-bottom:4px}
+
+  /* players */
+  .players{display:grid; grid-template-columns:repeat(auto-fill,minmax(216px,1fr)); gap:12px}
+  .pcard{background:var(--paper); border:1px solid var(--line-2); border-radius:var(--r); padding:13px 14px; box-shadow:var(--shadow); position:relative}
+  .pcard .top{display:flex; align-items:center; gap:8px}
+  .pcard input[type=color]{-webkit-appearance:none; appearance:none; width:20px; height:28px; padding:0; border:1px solid var(--line-2); border-radius:4px; background:none; cursor:pointer; flex:none}
+  .pcard input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+  .pcard input[type=color]::-webkit-color-swatch{border:none; border-radius:2px}
+  .pcard input.name{border:1px solid transparent; background:transparent; padding:3px 5px; font-weight:700; font-size:15px; border-radius:6px; min-width:0}
+  .pcard input.name:hover{border-color:var(--line-2); background:var(--paper-2)}
+  .pcard .cash{font-size:27px; font-weight:700; letter-spacing:-.01em; margin-top:6px}
+  .pcard .tot{font-size:14px; font-weight:700; color:var(--ink-2); margin-top:2px}
+  .pcard .sub{font-size:12px; color:var(--ink-3); margin-top:2px}
+  .pcard .del{position:absolute; top:6px; right:6px; opacity:0; font-size:12px}
+  .pcard:hover .del, .pcard:focus-within .del{opacity:1}
+
+  /* panels */
+  .cols{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:18px; align-items:start}
+  @media (max-width:760px){ .cols{grid-template-columns:1fr} }
+  .panel{background:var(--paper); border:1px solid var(--line-2); border-radius:var(--r); box-shadow:var(--shadow); padding:16px}
+  .tx{display:grid; grid-template-columns:1fr 34px 1fr; gap:10px; align-items:end}
+  .swap{align-self:end; height:38px; border-radius:9px; padding:0}
+  .amt{display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:12px; align-items:end}
+  .rentrow{display:grid; grid-template-columns:1fr auto; gap:8px}
+  .hint{font-size:12px; color:var(--ink-3); margin-top:10px; min-height:1.3em}
+  .hint.err{color:var(--loss); font-weight:700}
+  .divider{border:none; border-top:1px solid var(--line-2); margin:14px 0}
+
+  /* new game */
+  .newgame{margin-top:10px; display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); align-items:end}
+  .newgame .act{display:flex; gap:8px}
+
+  /* history */
+  .log{list-style:none; margin:0; padding:0; max-height:420px; overflow-y:auto}
+  .log li{display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line-2); font-size:14px}
+  .log li:last-child{border-bottom:none}
+  .log .who{flex:1; min-width:0}
+  .log .memo{display:block; font-size:11.5px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .log .amount{font-weight:700; white-space:nowrap}
+  .log li.undone{opacity:.45}
+  .log li.undone .amount{text-decoration:line-through}
+  .empty{color:var(--ink-3); font-size:13.5px; padding:14px 2px}
+
+  /* properties */
+  details.props{margin-top:12px; background:var(--paper); border:1px solid var(--line-2); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden}
+  details.props>summary{padding:14px 16px; cursor:pointer; font-weight:700; list-style:none; display:flex; align-items:center; gap:10px}
+  details.props>summary::-webkit-details-marker{display:none}
+  details.props>summary::after{content:"▾"; margin-left:auto; color:var(--ink-3)}
+  details.props[open]>summary::after{content:"▴"}
+  .ptable{width:100%; border-collapse:collapse; font-size:13.5px}
+  .ptable th{text-align:left; font-size:10.5px; letter-spacing:.1em; color:var(--ink-3); font-weight:700; padding:6px 8px; border-bottom:1px solid var(--line)}
+  .ptable td{padding:4px 8px; border-bottom:1px solid var(--line-2); vertical-align:middle}
+  .ptable td.n{white-space:nowrap}
+  .ptable tr.grp td{background:var(--paper-2); font-weight:700; font-size:12px; letter-spacing:.06em}
+  .ptable input.pname{border:1px solid transparent; background:transparent; padding:4px 6px; border-radius:6px; min-width:170px}
+  .ptable input.pname:hover{border-color:var(--line-2); background:var(--paper-2)}
+  .ptable input.price{width:82px; padding:4px 6px; border-radius:7px; text-align:right}
+  .ptable select{padding:5px 7px; border-radius:7px; font-size:13px; width:auto; min-width:104px; max-width:180px}
+  .gband{display:inline-block; width:12px; height:12px; border-radius:3px; border:1px solid rgba(0,0,0,.25); vertical-align:-1px; margin-right:7px}
+  .step{display:inline-flex; align-items:center; gap:2px}
+  .step button{padding:2px 8px; font-size:13px; border-radius:7px}
+  .step span{min-width:46px; text-align:center; font-size:12.5px}
+  .scroll{overflow-x:auto}
+  .mtg{font-size:11.5px; padding:3px 8px; white-space:nowrap}
+  .mtg.on{background:var(--brand); color:#fff; border-color:var(--brand)}
+  /* dialog */
+  .modal{position:fixed; inset:0; z-index:60; background:rgba(10,16,10,.48); display:flex; align-items:center; justify-content:center; padding:20px}
+  .mbox{background:var(--paper); border:1px solid var(--line-2); border-radius:14px; box-shadow:0 24px 60px rgba(0,0,0,.32); padding:20px; width:min(420px,100%); max-height:86vh; overflow:auto}
+  .mbox h3{margin:0 0 6px; font-size:17px}
+  .mbox p{margin:0 0 4px; font-size:13.5px; color:var(--ink-2); white-space:pre-line}
+  .mact{display:flex; gap:8px; justify-content:flex-end; margin-top:18px}
+  .step button.off{opacity:.38}
+  @media (hover:none){ .pcard .del{opacity:1} }
+  .foot{margin-top:26px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:12.5px; color:var(--ink-3)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  html{color-scheme:light dark}
+  img{max-width:100%}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="mark"><b>横浜モノポリー<span class="dot">銀行</span></b><span>BANKER</span></div>
+    <div class="stat"><label>流通中のお金</label><b class="num" id="statTotal">$0</b></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2>プレイヤー</h2>
+  <div class="players" id="players"></div>
+  <div class="row" style="margin-top:10px">
+    <button id="addPlayer">＋ プレイヤーを追加</button>
+    <button class="ghost" id="toggleNew">新しいゲームを始める</button>
+  </div>
+
+  <div class="panel newgame" id="newGame" hidden>
+    <div>
+      <label class="f" for="ngCash">ひとりの初期所持金（$）</label>
+      <input id="ngCash" class="num" type="number" min="1" step="50" value="1500">
+    </div>
+    <div>
+      <label class="f" for="ngBoard">土地の名前</label>
+      <select id="ngBoard">
+        <option value="yokohama">横浜・神奈川版</option>
+        <option value="classic">クラシック版</option>
+        <option value="custom">自由入力（あとで名前をつける）</option>
+      </select>
+    </div>
+    <div class="act">
+      <button class="primary" id="ngStart">はじめる</button>
+      <button class="ghost" id="ngCancel">やめる</button>
+    </div>
+  </div>
+
+  <div class="cols" style="margin-top:26px">
+    <section>
+      <h2 style="margin-top:0">取引を記録</h2>
+      <div class="panel">
+        <div class="tx">
+          <div><label class="f" for="from">誰から</label><select id="from"></select></div>
+          <button class="swap" id="swap" title="入れ替える" aria-label="支払う人と受け取る人を入れ替える">⇄</button>
+          <div><label class="f" for="to">誰へ</label><select id="to"></select></div>
+        </div>
+        <div class="amt">
+          <div><label class="f" for="amount">いくら（$）</label><input id="amount" class="num" type="number" min="0" step="1" inputmode="numeric" placeholder="200"></div>
+          <button class="primary" id="submit">記録する</button>
+        </div>
+        <div class="row" style="margin-top:10px" id="amtChips"></div>
+
+        <hr class="divider">
+
+        <label class="f" for="rentProp">地代から金額を入れる</label>
+        <div class="rentrow">
+          <select id="rentProp"></select>
+          <input id="dice" class="num" type="number" min="2" max="12" step="1" placeholder="出目" style="width:92px" hidden aria-label="サイコロ 2 個の合計">
+        </div>
+
+        <div style="margin-top:12px"><label class="f" for="memo">メモ（任意）</label><input id="memo" type="text" maxlength="28" placeholder="山下公園の地代"></div>
+        <div class="row" style="margin-top:10px" id="presets"></div>
+        <p class="hint" id="hint"></p>
+      </div>
+    </section>
+
+    <section>
+      <h2 style="margin-top:0">履歴</h2>
+      <div class="panel"><ul class="log" id="log"></ul></div>
+    </section>
+  </div>
+
+  <h2>物件</h2>
+  <details class="props" id="propsBox">
+    <summary>名前・価格・所有者・建物を管理する<span id="propCount" style="font-weight:400;color:var(--ink-3);font-size:12.5px"></span></summary>
+    <div class="scroll"><table class="ptable" id="ptable"></table></div>
+  </details>
+
+  <div class="foot">
+    <span id="saveNote">このブラウザに自動保存されます</span>
+    <button class="ghost" id="backup">バックアップを保存</button>
+    <button class="ghost" id="restore">バックアップを読み込む</button>
+    <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+    <button class="ghost" id="resetAll">すべて消す</button>
+  </div>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <h3 id="mTitle"></h3>
+    <p id="mMsg"></p>
+    <div id="mField" hidden style="margin-top:12px">
+      <label class="f" for="mInput">金額（$）</label>
+      <input id="mInput" class="num" type="number" min="0" step="10" inputmode="numeric">
+    </div>
+    <div class="mact">
+      <button class="ghost" id="mCancel">キャンセル</button>
+      <button class="primary" id="mOk">決定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ 盤面データ ============ */
+  var GROUPS = {
+    brown: {name:"茶色", color:"#955436", house:50},
+    sky:   {name:"水色", color:"#A8DEF7", house:50},
+    pink:  {name:"ピンク", color:"#E4007F", house:100},
+    orange:{name:"オレンジ", color:"#F07F13", house:100},
+    red:   {name:"赤", color:"#CE1126", house:150},
+    yellow:{name:"黄色", color:"#F5D200", house:150},
+    green: {name:"緑", color:"#0E8A3E", house:200},
+    blue:  {name:"青", color:"#1263B0", house:200},
+    rail:  {name:"鉄道", color:"#1A3A6B", house:0},
+    util:  {name:"公共文化施設", color:"#8E9296", house:0}
+  };
+  var GORDER = ["brown","sky","pink","orange","red","yellow","green","blue","rail","util"];
+
+  // [グループ, 定価, 地代0..4軒, ホテル]
+  var DEF = [
+    ["brown",60,[2,10,30,90,160,250]],   ["brown",60,[4,20,60,180,320,450]],
+    ["sky",100,[6,30,90,270,400,550]],   ["sky",100,[6,30,90,270,400,550]],   ["sky",120,[8,40,100,300,450,600]],
+    ["pink",140,[10,50,150,450,625,750]],["pink",140,[10,50,150,450,625,750]],["pink",160,[12,60,180,500,700,900]],
+    ["orange",180,[14,70,200,550,750,950]],["orange",180,[14,70,200,550,750,950]],["orange",200,[16,80,220,600,800,1000]],
+    ["red",220,[18,90,250,700,875,1050]],["red",220,[18,90,250,700,875,1050]],["red",240,[20,100,300,750,925,1100]],
+    ["yellow",260,[22,110,330,800,975,1150]],["yellow",260,[22,110,330,800,975,1150]],["yellow",280,[24,120,360,850,1025,1200]],
+    ["green",300,[26,130,390,900,1100,1275]],["green",300,[26,130,390,900,1100,1275]],["green",320,[28,150,450,1000,1200,1400]],
+    ["blue",350,[35,175,500,1100,1300,1500]],["blue",400,[50,200,600,1400,1700,2000]],
+    ["rail",200,null],["rail",200,null],["rail",200,null],["rail",200,null],
+    ["util",150,null],["util",150,null]
+  ].map(function(d,i){ return {i:i, id:"p"+i, g:d[0], base:d[1], rent:d[2]}; });
+
+  var NAMESETS = {
+    yokohama: {label:"横浜・神奈川版", names:[
+      "宮ヶ瀬湖","さがみ湖MORI MORI","猿島","くりはま花の国","横須賀ソレイユの丘",
+      "新横浜ラーメン博物館","カップヌードルミュージアム","横浜アンパンマンこどもミュージアム",
+      "赤レンガ倉庫","三溪園","小田原城","金沢動物園","野毛山動物園","よこはま動物園ズーラシア",
+      "箱根","江ノ島","鎌倉","横浜中華街","横浜スタジアム","八景島シーパラダイス",
+      "山下公園","ランドマークタワー",
+      "小田急線","相鉄線","横浜シーサイドライン","京浜急行",
+      "大和市文化創造拠点シリウス","横浜市立中央図書館"]},
+    classic: {label:"クラシック版", names:[
+      "地中海通り","バルチック通り","オリエンタル通り","バーモント通り","コネチカット通り",
+      "セントチャールズ通り","ステーツ通り","バージニア通り",
+      "セントジェームズ通り","テネシー通り","ニューヨーク通り","ケンタッキー通り","インディアナ通り","イリノイ通り",
+      "アトランティック通り","ベントナー通り","マーヴィンガーデン","パシフィック通り","ノースカロライナ通り","ペンシルベニア通り",
+      "パークプレイス","ボードウォーク",
+      "リーディング鉄道","ペンシルベニア鉄道","B&O鉄道","ショートライン鉄道",
+      "電力会社","水道会社"]},
+    custom: {label:"自由入力", names:(function(){
+      var a=[], land=0, rail=0, util=0;
+      DEF.forEach(function(d){
+        if(d.g==="rail") a.push("鉄道 "+(++rail));
+        else if(d.g==="util") a.push("公共施設 "+(++util));
+        else a.push("土地 "+(++land));
+      });
+      return a;
+    })()}
+  };
+
+  var TOKENS = ["#CE1126","#1263B0","#0E8A3E","#F07F13","#7D3C98","#E4007F","#1A3A6B","#8A6D1F"];
+  var KEY = "ykhm-monopoly-bank-v2", OLDKEY = "ykhm-monopoly-bank-v1", START = 1500;
+
+  /* ============ 保存 ============ */
+  var memoryOnly = false;
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw) return JSON.parse(raw);
+      var old = localStorage.getItem(OLDKEY);
+      if(old){
+        var o = JSON.parse(old), s = freshState(o.start || START, "yokohama");
+        s.players = o.players || s.players;
+        s.props = o.props || {}; s.log = o.log || []; s.bank = o.bank || 0; s.seq = o.seq || 50;
+        return s;
+      }
+    }catch(e){ memoryOnly = true; }
+    return null;
+  }
+  function save(){
+    if(memoryOnly) return;
+    try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+    catch(e){ memoryOnly = true; noteSave(); }
+  }
+  function noteSave(){
+    var n = document.getElementById("saveNote");
+    if(n && memoryOnly) n.textContent = "このブラウザには保存できません。こまめに「バックアップを保存」をお使いください";
+  }
+
+  function freshState(start, set){
+    var s = { seq:5, start:start||START, set:set||"yokohama", players:[], bank:0, props:{}, log:[],
+              names:NAMESETS[set||"yokohama"].names.slice(),
+              prices:DEF.map(function(d){ return d.base; }) };
+    ["プレイヤー1","プレイヤー2","プレイヤー3","プレイヤー4"].forEach(function(n,i){
+      s.players.push({id:"u"+(i+1), name:n, cash:s.start, color:TOKENS[i]});
+    });
+    return s;
+  }
+
+  var S = load();
+  if(!S || !S.players || !S.players.length) S = freshState(START, "yokohama");
+  if(!S.names || S.names.length !== DEF.length) S.names = NAMESETS.yokohama.names.slice();
+  if(!S.prices || S.prices.length !== DEF.length) S.prices = DEF.map(function(d){ return d.base; });
+  if(!S.props) S.props = {};
+  if(!S.log) S.log = [];
+
+  /* ============ 便利関数 ============ */
+  function $(id){ return document.getElementById(id); }
+  function money(n){ return (n<0?"−$":"$") + Math.abs(Math.round(n)).toLocaleString("en-US"); }
+  function player(id){ for(var i=0;i<S.players.length;i++) if(S.players[i].id===id) return S.players[i]; return null; }
+  function label(id){
+    if(id==="bank") return "銀行";
+    if(id==="all")  return "全員";
+    var p = player(id); return p ? p.name : "（退場）";
+  }
+  function pname(i){ return S.names[i] || ("物件 "+(i+1)); }
+  function price(i){ return Number(S.prices[i]) || 0; }
+  function mortOf(i){ return Math.round(price(i)/2); }
+  function st(i){
+    var k = "p"+i;
+    if(!S.props[k]) S.props[k] = {owner:null, houses:0, mortgaged:false};
+    return S.props[k];
+  }
+  function ownedInGroup(ownerId, g){
+    var n=0; DEF.forEach(function(d){ if(d.g===g && st(d.i).owner===ownerId) n++; });
+    return n;
+  }
+  function groupSize(g){ var n=0; DEF.forEach(function(d){ if(d.g===g) n++; }); return n; }
+  function assets(pid){
+    var p = player(pid); if(!p) return 0;
+    var total = p.cash;
+    DEF.forEach(function(d){
+      var s = st(d.i); if(s.owner !== pid) return;
+      total += s.mortgaged ? mortOf(d.i) : price(d.i);
+      total += (s.houses||0) * GROUPS[d.g].house;
+    });
+    return total;
+  }
+  var HOUSE_STOCK = 32, HOTEL_STOCK = 12;
+  function stock(){
+    var h = 0, ho = 0;
+    DEF.forEach(function(d){
+      var s = st(d.i);
+      if(s.houses >= 5) ho++; else h += (s.houses || 0);
+    });
+    return {houses: HOUSE_STOCK - h, hotels: HOTEL_STOCK - ho};
+  }
+  function groupComplete(ownerId, g){ return !!ownerId && ownedInGroup(ownerId, g) === groupSize(g); }
+  function groupMortgaged(g){
+    var any = false;
+    DEF.forEach(function(d){ if(d.g === g && st(d.i).mortgaged) any = true; });
+    return any;
+  }
+  function canBuild(i){
+    var d = DEF[i], s = st(i), g = GROUPS[d.g], k = stock();
+    if(!g.house) return {ok:false, why:"この物件には建てられません"};
+    if(!s.owner) return {ok:false, why:"所有者がいません"};
+    if(!groupComplete(s.owner, d.g)) return {ok:false, why:GROUPS[d.g].name + "をすべて所有すると建てられます"};
+    if(groupMortgaged(d.g)) return {ok:false, why:"同じ色に抵当中の物件があります"};
+    if(s.houses >= 5) return {ok:false, why:"ホテルまで建っています"};
+    if(s.houses === 4) return k.hotels > 0 ? {ok:true, hotel:true} : {ok:false, why:"ホテルの在庫がありません（全部で " + HOTEL_STOCK + " 軒）"};
+    return k.houses > 0 ? {ok:true} : {ok:false, why:"家の在庫がありません（全部で " + HOUSE_STOCK + " 軒）"};
+  }
+  function canSell(i){
+    var s = st(i), k = stock();
+    if(s.houses <= 0) return {ok:false, why:"建物がありません"};
+    if(s.houses === 5 && k.houses < 4) return {ok:false, why:"家の在庫が足りず、ホテルを崩せません"};
+    return {ok:true};
+  }
+  function propsOf(pid){ var n=0; DEF.forEach(function(d){ if(st(d.i).owner===pid) n++; }); return n; }
+
+  /* ============ 地代 ============ */
+  function rentOf(i, dice){
+    var s = st(i), d = DEF[i];
+    if(!s.owner) return {err:"所有者がいません"};
+    if(s.mortgaged) return {err:"抵当中なので地代はかかりません"};
+    if(d.g === "rail"){
+      var n = ownedInGroup(s.owner, "rail");
+      return {amount:[0,25,50,100,200][n], note:n+" 駅所有"};
+    }
+    if(d.g === "util"){
+      var m = ownedInGroup(s.owner, "util") >= 2 ? 10 : 4;
+      if(!dice) return {needDice:true, mult:m};
+      return {amount:dice*m, note:"出目 "+dice+" ×"+m+" 倍"};
+    }
+    if(s.houses > 0) return {amount:d.rent[s.houses], note:(s.houses>=5 ? "ホテル" : "家 "+s.houses+" 軒")};
+    var all = ownedInGroup(s.owner, d.g) === groupSize(d.g);
+    return {amount:d.rent[0] * (all?2:1), note: all ? "色をすべて所有・地代 2 倍" : "更地"};
+  }
+
+  /* ============ 取引 ============ */
+  function credit(id, amount){
+    if(id==="bank"){ S.bank += amount; return; }
+    var p = player(id); if(p) p.cash += amount;
+  }
+  function pairsFor(from, to, amount){
+    var pairs = [];
+    if(from==="all"){ S.players.forEach(function(p){ if(p.id!==to) pairs.push([p.id,to,amount]); }); }
+    else if(to==="all"){ S.players.forEach(function(p){ if(p.id!==from) pairs.push([from,p.id,amount]); }); }
+    else pairs.push([from,to,amount]);
+    return pairs;
+  }
+  function applyEntry(e, sign){
+    pairsFor(e.from, e.to, e.amount).forEach(function(pr){
+      credit(pr[0], -pr[2]*sign); credit(pr[1], pr[2]*sign);
+    });
+  }
+  function record(from, to, amount, memo){
+    if(amount > 0){
+      var e = {id:"t"+(S.seq++), from:from, to:to, amount:amount, memo:memo||"", t:Date.now(), undone:false};
+      applyEntry(e, 1);
+      S.log.unshift(e);
+      if(S.log.length > 250) S.log.length = 250;
+    }
+    save(); render();
+  }
+  function toggleUndo(tid){
+    for(var i=0;i<S.log.length;i++){
+      if(S.log[i].id===tid){
+        var e = S.log[i];
+        applyEntry(e, e.undone ? 1 : -1);
+        e.undone = !e.undone;
+        save(); render(); return;
+      }
+    }
+  }
+
+  /* ============ 描画 ============ */
+  function el(tag, cls, text){
+    var n = document.createElement(tag);
+    if(cls) n.className = cls;
+    if(text != null) n.textContent = text;
+    return n;
+  }
+
+  function renderPlayers(){
+    var box = $("players"); box.textContent = "";
+    S.players.forEach(function(p){
+      var c = el("div","pcard");
+      var top = el("div","top");
+
+      var col = document.createElement("input");
+      col.type = "color"; col.value = p.color; col.id = "col-"+p.id;
+      col.setAttribute("aria-label", p.name + " のイメージカラー");
+      col.title = "イメージカラーを変える";
+      col.addEventListener("input", function(){ p.color = col.value; save(); });
+      top.appendChild(col);
+
+      var inp = document.createElement("input");
+      inp.className = "name"; inp.value = p.name; inp.id = "name-"+p.id;
+      inp.setAttribute("aria-label","プレイヤー名");
+      inp.addEventListener("change", function(){
+        p.name = inp.value.trim() || "プレイヤー";
+        inp.value = p.name; save(); render();
+      });
+      top.appendChild(inp);
+      c.appendChild(top);
+
+      var cash = el("div","cash num", money(p.cash));
+      if(p.cash < 0) cash.style.color = "var(--loss)";
+      c.appendChild(cash);
+      c.appendChild(el("div","tot num", "総資産 " + money(assets(p.id))));
+      c.appendChild(el("div","sub", "物件 " + propsOf(p.id) + " 件"));
+
+      var del = el("button","ghost del","削除");
+      del.title = p.name + " を削除";
+      del.addEventListener("click", function(){
+        if(S.players.length<=2){ say("プレイヤーは 2 人以上必要です", true); return; }
+        askYes(p.name + " を削除", "所有している物件は空きに戻ります。残高と履歴の表示も消えます。", "削除する", function(yes){
+          if(!yes) return;
+          DEF.forEach(function(d){ var s2=st(d.i); if(s2.owner===p.id){ s2.owner=null; s2.houses=0; s2.mortgaged=false; } });
+          S.players = S.players.filter(function(x){ return x.id!==p.id; });
+          save(); render();
+        });
+      });
+      c.appendChild(del);
+      box.appendChild(c);
+    });
+  }
+
+  function fillPeople(sel){
+    var keep = sel.value;
+    sel.textContent = "";
+    function add(v,t){ var o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o); }
+    add("bank","銀行");
+    S.players.forEach(function(p){ add(p.id, p.name); });
+    add("all","全員（銀行以外）");
+    if(keep && sel.querySelector('option[value="'+keep+'"]')) sel.value = keep;
+  }
+  function renderSelects(){
+    fillPeople($("from")); fillPeople($("to"));
+    if(!$("from").value) $("from").value = "bank";
+    if(!$("to").value) $("to").value = S.players[0] ? S.players[0].id : "bank";
+
+    var r = $("rentProp"), keep = r.value;
+    r.textContent = "";
+    var o0 = document.createElement("option"); o0.value=""; o0.textContent="物件を選ぶと地代が入ります"; r.appendChild(o0);
+    GORDER.forEach(function(g){
+      var og = document.createElement("optgroup"); og.label = GROUPS[g].name;
+      DEF.forEach(function(d){
+        if(d.g !== g) return;
+        var o = document.createElement("option");
+        o.value = d.i;
+        var s = st(d.i);
+        o.textContent = pname(d.i) + (s.owner ? "（" + label(s.owner) + "）" : "（空き）");
+        og.appendChild(o);
+      });
+      r.appendChild(og);
+    });
+    if(keep && r.querySelector('option[value="'+keep+'"]')) r.value = keep;
+  }
+
+  function renderLog(){
+    var ul = $("log"); ul.textContent = "";
+    if(!S.log.length){
+      var e = el("li"); e.appendChild(el("div","empty","まだ取引はありません。左の「取引を記録」から 1 件目を入れてください。"));
+      ul.appendChild(e); return;
+    }
+    S.log.slice(0,80).forEach(function(en){
+      var li = el("li", en.undone ? "undone" : "");
+      var who = el("div","who");
+      var line = el("div");
+      line.appendChild(el("b",null,label(en.from)));
+      line.appendChild(document.createTextNode(" → "));
+      line.appendChild(el("b",null,label(en.to)));
+      who.appendChild(line);
+      var d = new Date(en.t), p2 = function(n){ return ("0"+n).slice(-2); };
+      var time = p2(d.getHours())+":"+p2(d.getMinutes());
+      who.appendChild(el("span","memo", en.memo ? en.memo + " ・ " + time : time));
+      li.appendChild(who);
+      li.appendChild(el("div","amount num", money(en.amount)));
+      var btn = el("button","ghost", en.undone ? "戻す" : "取り消し");
+      btn.addEventListener("click", function(){ toggleUndo(en.id); });
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  }
+
+  /* iPad などアプリ内ブラウザでは prompt / confirm が使えないので自前のダイアログを使う */
+  var modalCb = null;
+  function closeModal(){ $("modal").hidden = true; modalCb = null; }
+  function cancelModal(){ var cb = modalCb; closeModal(); if(cb) cb(null); }
+  function okModal(){
+    var cb = modalCb, numeric = !$("mField").hidden, v = true;
+    if(numeric){
+      v = Math.floor(Number($("mInput").value));
+      if(isNaN(v) || v < 0){ $("mInput").focus(); $("mInput").select(); return; }
+    }
+    closeModal();
+    if(cb) cb(v);
+  }
+  function openModal(o, cb){
+    $("mTitle").textContent = o.title || "";
+    $("mMsg").textContent = o.message || "";
+    $("mField").hidden = !o.number;
+    if(o.number) $("mInput").value = (o.value != null ? o.value : "");
+    $("mOk").textContent = o.ok || "決定";
+    modalCb = cb;
+    $("modal").hidden = false;
+    setTimeout(function(){
+      var t = o.number ? $("mInput") : $("mOk");
+      t.focus(); if(o.number) t.select();
+    }, 40);
+  }
+  $("mCancel").addEventListener("click", cancelModal);
+  $("mOk").addEventListener("click", okModal);
+  $("modal").addEventListener("click", function(e){ if(e.target === $("modal")) cancelModal(); });
+  $("mInput").addEventListener("keydown", function(e){ if(e.key === "Enter") okModal(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !$("modal").hidden) cancelModal(); });
+
+  function askAmount(title, message, def, cb){
+    openModal({title:title, message:message, number:true, value:def, ok:"決定"}, cb);
+  }
+  function askYes(title, message, okText, cb){
+    openModal({title:title, message:message, ok:okText || "はい"}, function(v){ cb(v === true); });
+  }
+
+  function renderProps(){
+    var tb = $("ptable"); tb.textContent = "";
+    var head = document.createElement("tr");
+    ["物件","価格","所有者","建物","抵当"].forEach(function(h){
+      var th = document.createElement("th"); th.textContent = h; head.appendChild(th);
+    });
+    var thead = document.createElement("thead"); thead.appendChild(head); tb.appendChild(thead);
+    var body = document.createElement("tbody");
+    var lastG = null;
+
+    DEF.forEach(function(d){
+      var g = GROUPS[d.g], s = st(d.i);
+      if(d.g !== lastG){
+        lastG = d.g;
+        var gr = document.createElement("tr"); gr.className = "grp";
+        var gd = document.createElement("td"); gd.colSpan = 5;
+        var band = el("span","gband"); band.style.background = g.color; gd.appendChild(band);
+        gd.appendChild(document.createTextNode(g.name + (g.house ? "　家 1 軒 $" + g.house : "")));
+        gr.appendChild(gd); body.appendChild(gr);
+      }
+      var tr = document.createElement("tr");
+
+      // 名前（編集できる）
+      var tdN = document.createElement("td");
+      var nameI = document.createElement("input");
+      nameI.className = "pname"; nameI.value = pname(d.i); nameI.id = "pn-"+d.i;
+      nameI.setAttribute("aria-label","物件名");
+      nameI.addEventListener("change", function(){
+        S.names[d.i] = nameI.value.trim() || ("物件 "+(d.i+1));
+        nameI.value = S.names[d.i]; S.set = "custom"; save(); renderSelects(); renderProps();
+      });
+      tdN.appendChild(nameI); tr.appendChild(tdN);
+
+      // 価格（編集できる／競売などに）
+      var tdP = document.createElement("td"); tdP.className = "n";
+      var priceI = document.createElement("input");
+      priceI.className = "price num"; priceI.type = "number"; priceI.min = "0"; priceI.step = "10";
+      priceI.value = price(d.i); priceI.id = "pp-"+d.i;
+      priceI.setAttribute("aria-label", pname(d.i) + " の価格");
+      priceI.addEventListener("change", function(){
+        var v = Math.max(0, Math.floor(Number(priceI.value) || 0));
+        S.prices[d.i] = v; priceI.value = v; save(); render();
+      });
+      tdP.appendChild(priceI); tr.appendChild(tdP);
+
+      // 所有者（変更時に金額を入れて売買）
+      var tdO = document.createElement("td");
+      var sel = document.createElement("select");
+      sel.id = "own-"+d.i;
+      sel.setAttribute("aria-label", pname(d.i) + " の所有者");
+      var o0 = document.createElement("option"); o0.value=""; o0.textContent="空き"; sel.appendChild(o0);
+      S.players.forEach(function(p){ var o=document.createElement("option"); o.value=p.id; o.textContent=p.name; sel.appendChild(o); });
+      sel.value = s.owner || "";
+      sel.addEventListener("change", function(){
+        var prev = s.owner, next = sel.value || null, nm = pname(d.i);
+        if(prev === next) return;
+        if(!prev && next){                                   // 購入（競売なら落札額を入れる）
+          askAmount(nm + " を購入", "銀行へ支払う額を入れてください。競売のときは落札額を入れます。", price(d.i), function(amt){
+            if(amt === null){ sel.value = prev || ""; return; }
+            s.owner = next;
+            record(next, "bank", amt, nm + "を購入");
+          });
+        }else if(prev && !next){                             // 銀行へ売却
+          askAmount(nm + " を銀行へ売却", label(prev) + " が銀行から受け取る額を入れてください。建物と抵当は解除されます。", Math.round(price(d.i)/2), function(amt){
+            if(amt === null){ sel.value = prev; return; }
+            s.owner = null; s.houses = 0; s.mortgaged = false;
+            record("bank", prev, amt, nm + "を銀行へ売却");
+          });
+        }else{                                               // プレイヤー間の売買
+          askAmount(nm + " を売買", label(next) + " が " + label(prev) + " に支払う額を入れてください。0 なら無償で譲渡します。", price(d.i), function(amt){
+            if(amt === null){ sel.value = prev; return; }
+            s.owner = next;
+            record(next, prev, amt, nm + "を" + label(prev) + "から取得");
+          });
+        }
+      });
+      tdO.appendChild(sel); tr.appendChild(tdO);
+
+      // 建物
+      var tdH = document.createElement("td"); tdH.className = "n";
+      if(g.house && s.owner){
+        var up = canBuild(d.i), down = canSell(d.i);
+        var step = el("span","step");
+        var minus = el("button",null,"−");
+        var lbl = el("span",null, s.houses>=5 ? "ホテル" : "家 "+s.houses);
+        var plus = el("button",null,"＋");
+        if(!down.ok){ minus.classList.add("off"); minus.setAttribute("aria-disabled","true"); }
+        if(!up.ok){ plus.classList.add("off"); plus.setAttribute("aria-disabled","true"); }
+        minus.title = down.ok ? "建物を売る" : down.why;
+        plus.title  = up.ok ? (up.hotel ? "家 4 軒をホテルに建て替える" : "家を建てる") : up.why;
+        minus.setAttribute("aria-label", pname(d.i)+" の建物を減らす");
+        plus.setAttribute("aria-label", pname(d.i)+" の建物を増やす");
+        minus.addEventListener("click", function(){
+          var c = canSell(d.i);
+          if(!c.ok){ say(pname(d.i) + "：" + c.why, true); return; }
+          s.houses--; record("bank", s.owner, Math.round(g.house/2), pname(d.i) + "の建物を売却");
+        });
+        plus.addEventListener("click", function(){
+          var c = canBuild(d.i);
+          if(!c.ok){ say(pname(d.i) + "：" + c.why, true); return; }
+          s.houses++; record(s.owner, "bank", g.house, pname(d.i) + (s.houses>=5 ? "にホテルを建設" : "に家を建設"));
+        });
+        step.appendChild(minus); step.appendChild(lbl); step.appendChild(plus);
+        tdH.appendChild(step);
+        if(!up.ok && s.houses < 5 && !groupComplete(s.owner, d.g)){
+          var badge = el("span", null, " 色の独占が必要");
+          badge.style.cssText = "font-size:11px;color:var(--ink-3);margin-left:6px";
+          tdH.appendChild(badge);
+        }
+      }else{
+        tdH.appendChild(el("span",null,"—")); tdH.style.color = "var(--ink-3)";
+      }
+      tr.appendChild(tdH);
+
+      // 抵当
+      var tdM = document.createElement("td"); tdM.className = "n";
+      if(s.owner){
+        var m = mortOf(d.i);
+        var mb = el("button","chip mtg"+(s.mortgaged?" on":""), s.mortgaged ? "抵当中 $"+m : "抵当 $"+m);
+        mb.addEventListener("click", function(){
+          if(s.mortgaged){
+            s.mortgaged = false;
+            record(s.owner, "bank", Math.ceil(m*1.1), pname(d.i) + "の抵当を解除");
+          }else{
+            if(s.houses>0){ say("建物があるうちは抵当に入れられません", true); return; }
+            s.mortgaged = true;
+            record("bank", s.owner, m, pname(d.i) + "を抵当に入れる");
+          }
+        });
+        tdM.appendChild(mb);
+      }else{
+        tdM.appendChild(el("span",null,"—")); tdM.style.color = "var(--ink-3)";
+      }
+      tr.appendChild(tdM);
+      body.appendChild(tr);
+    });
+    tb.appendChild(body);
+
+    var owned = 0;
+    DEF.forEach(function(d){ if(st(d.i).owner) owned++; });
+    var k = stock();
+    $("propCount").textContent = "　" + owned + " / " + DEF.length + " 件が所有済み　・　残り 家 "
+      + k.houses + " / " + HOUSE_STOCK + "　ホテル " + k.hotels + " / " + HOTEL_STOCK;
+  }
+
+  function renderStats(){
+    $("statTotal").textContent = money(S.players.reduce(function(a,p){ return a + p.cash; }, 0));
+  }
+
+  function render(){ renderPlayers(); renderSelects(); renderLog(); renderProps(); renderStats(); }
+
+  /* ============ 取引フォーム ============ */
+  function say(msg, isErr){
+    var h = $("hint");
+    h.textContent = msg || "";
+    h.className = "hint" + (isErr ? " err" : "");
+  }
+
+  [10,50,100,200,500,1000].forEach(function(v){
+    var b = el("button","chip","$"+v);
+    b.addEventListener("click", function(){ $("amount").value = v; say(""); });
+    $("amtChips").appendChild(b);
+  });
+
+  [ {t:"スタート通過 $200", from:"bank", amount:200, memo:"スタート通過"},
+    {t:"所得税 $200",       to:"bank",   amount:200, memo:"所得税"},
+    {t:"物品税 $75",        to:"bank",   amount:75,  memo:"物品税"},
+    {t:"保釈金 $50",        to:"bank",   amount:50,  memo:"保釈金"},
+    {t:"全員へ $50",        to:"all",    amount:50,  memo:"全員へ支払い"},
+    {t:"全員から $50",      from:"all",  amount:50,  memo:"全員から受け取り"}
+  ].forEach(function(p){
+    var b = el("button","chip",p.t);
+    b.addEventListener("click", function(){
+      if(p.from) $("from").value = p.from;
+      if(p.to)   $("to").value   = p.to;
+      $("amount").value = p.amount;
+      $("memo").value = p.memo;
+      if($("from").value === $("to").value){
+        say("相手を選んでから「記録する」を押してください");
+        (p.from ? $("to") : $("from")).focus();
+      }else{
+        say("内容を確かめて「記録する」を押してください");
+        $("submit").focus();
+      }
+    });
+    $("presets").appendChild(b);
+  });
+
+  function applyRent(){
+    var v = $("rentProp").value;
+    if(v === ""){ $("dice").hidden = true; return; }
+    var i = Number(v), d = DEF[i];
+    var dice = d.g === "util" ? Math.floor(Number($("dice").value) || 0) : 0;
+    var r = rentOf(i, dice);
+    $("dice").hidden = (d.g !== "util");
+    if(r.err){ say(pname(i) + "：" + r.err, true); return; }
+    if(r.needDice){
+      say(pname(i) + "：サイコロ 2 個の合計を入れてください（出目 ×" + r.mult + " 倍）");
+      $("dice").focus(); return;
+    }
+    $("to").value = st(i).owner;
+    $("amount").value = r.amount;
+    $("memo").value = pname(i) + "の地代";
+    say(pname(i) + "（" + r.note + "）の地代は " + money(r.amount) + "。支払う人を選んで記録してください。");
+    if($("from").value === $("to").value) $("from").focus(); else $("submit").focus();
+  }
+  $("rentProp").addEventListener("change", applyRent);
+  $("dice").addEventListener("input", applyRent);
+
+  $("swap").addEventListener("click", function(){
+    var f=$("from").value, t=$("to").value;
+    $("from").value = t; $("to").value = f; say("");
+  });
+
+  function submit(){
+    var from = $("from").value, to = $("to").value;
+    var amount = Math.floor(Number($("amount").value));
+    if(from === to){ say("支払う人と受け取る人が同じです", true); return; }
+    if(from === "all" && to === "all"){ say("「全員」どうしの取引はできません", true); return; }
+    if(!amount || amount <= 0){ say("金額を 1 以上で入れてください", true); $("amount").focus(); return; }
+    var memo = $("memo").value.trim();
+    record(from, to, amount, memo);
+    $("amount").value = ""; $("memo").value = ""; $("rentProp").value = ""; $("dice").value = ""; $("dice").hidden = true;
+    say(label(from) + " → " + label(to) + " " + money(amount) + " を記録しました");
+    $("amount").focus();
+  }
+  $("submit").addEventListener("click", submit);
+  ["amount","memo"].forEach(function(id){
+    $(id).addEventListener("keydown", function(e){ if(e.key === "Enter") submit(); });
+  });
+
+  /* ============ プレイヤー・新規ゲーム ============ */
+  $("addPlayer").addEventListener("click", function(){
+    if(S.players.length >= 8){ say("プレイヤーは 8 人までです", true); return; }
+    var i = S.players.length;
+    S.players.push({id:"u"+(S.seq++), name:"プレイヤー"+(i+1), cash:S.start, color:TOKENS[i % TOKENS.length]});
+    save(); render();
+    var inp = $("name-" + S.players[S.players.length-1].id);
+    if(inp){ inp.focus(); inp.select(); }
+  });
+
+  $("toggleNew").addEventListener("click", function(){
+    var p = $("newGame");
+    p.hidden = !p.hidden;
+    if(!p.hidden){ $("ngCash").value = S.start; $("ngBoard").value = S.set || "yokohama"; $("ngCash").focus(); }
+  });
+  $("ngCancel").addEventListener("click", function(){ $("newGame").hidden = true; });
+  $("ngStart").addEventListener("click", function(){
+    var start = Math.floor(Number($("ngCash").value));
+    if(!start || start <= 0){ say("初期所持金は 1 以上で入れてください", true); $("ngCash").focus(); return; }
+    var set = $("ngBoard").value;
+    var names = S.players.map(function(p){ return {name:p.name, color:p.color}; });
+    S = freshState(start, set);
+    S.players = names.map(function(n,i){ return {id:"u"+(i+1), name:n.name, cash:start, color:n.color}; });
+    S.seq = names.length + 1;
+    $("newGame").hidden = true;
+    save(); render();
+    say("新しいゲームを始めました（" + NAMESETS[set].label + "・ひとり " + money(start) + "）");
+  });
+
+  $("resetAll").addEventListener("click", function(){
+    askYes("すべて消す", "プレイヤー・残高・履歴・物件をすべて消して、最初の状態に戻します。", "消す", function(yes){
+      if(!yes) return;
+      S = freshState(START, "yokohama");
+      save(); render();
+      say("最初の状態に戻しました");
+    });
+  });
+
+  /* ============ 起動 ============ */
+  render();
+  noteSave();
+  say("");
+
+  /* ============ バックアップ（JSON ファイル） ============ */
+  $("backup").addEventListener("click", function(){
+    try{
+      var blob = new Blob([JSON.stringify(S, null, 2)], {type:"application/json"});
+      var url = URL.createObjectURL(blob);
+      var d = new Date(), q = function(n){ return ("0"+n).slice(-2); };
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "モノポリー銀行_" + d.getFullYear() + q(d.getMonth()+1) + q(d.getDate()) + "_" + q(d.getHours()) + q(d.getMinutes()) + ".json";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+      say("バックアップを保存しました");
+    }catch(e){ say("バックアップを保存できませんでした", true); }
+  });
+  $("restore").addEventListener("click", function(){ $("restoreFile").click(); });
+  $("restoreFile").addEventListener("change", function(){
+    var f = $("restoreFile").files[0];
+    if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      try{
+        var data = JSON.parse(String(r.result));
+        if(!data || !data.players || !data.players.length) throw new Error("形式が違います");
+        S = data;
+        if(!S.props) S.props = {};
+        if(!S.log) S.log = [];
+        if(!S.start) S.start = START;
+        if(!S.set) S.set = "yokohama";
+        if(!S.names || S.names.length !== DEF.length) S.names = NAMESETS.yokohama.names.slice();
+        if(!S.prices || S.prices.length !== DEF.length) S.prices = DEF.map(function(d){ return d.base; });
+        if(typeof S.bank !== "number") S.bank = 0;
+        if(!S.seq) S.seq = 100;
+        save(); render();
+        say("バックアップを読み込みました");
+      }catch(e){
+        say("このファイルは読み込めませんでした（バックアップの JSON を選んでください）", true);
+      }
+      $("restoreFile").value = "";
+    };
+    r.readAsText(f);
+  });
+
+})();
+</script>
+</body>
+</html>
